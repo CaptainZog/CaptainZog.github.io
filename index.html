@@ -36,19 +36,20 @@
 </head>
 <body onload='init()'>
     <h1>Narrative Visualization v2</h1>
-    <span id="testSpan">hello</span>
-    <svg width=300 height=300></svg>
     <div id="tooltip" class="hidden">
-        <p><strong>Important Label Heading</strong></p>
-        <p><span id="value">100</span>%</p>
+        <p><strong id="tooltipHeader">Tooltip Header</strong></p>
+        <p><span id="tooltipText">Tooltip Text</span></p>
     </div>
+    <svg width=300 height=300></svg>
+
     <script>
         async function init() {
 
-            data = await d3.csv("https://flunky.github.io/cars2017.csv");
+           // data = await d3.csv("StateCounties/cc-est2019-agesex-01.csv");
+            data = await d3.csv("http://CaptainZog.github.io/StateCounties/cc-est2019-agesex-01.csv");
+           // C:\GitHub\CaptainZog.github.io\StateCounties
 
             var tooltip = d3.select("#tooltip");
-            var testSpan = d3.select("#testSpan");
             var xScale = d3.scaleLog().domain([10, 150]).range([0, 200]);
             var yScale = d3.scaleLog().domain([10, 150]).range([200, 0]);
 
@@ -58,15 +59,15 @@
                 .data(data)
                 .enter()
                 .append("circle")
-                .attr("cx", function (d) { return xScale(d.AverageCityMPG); })
-                .attr("cy", function (d) { return yScale(d.AverageHighwayMPG); })
-                .attr("r", function (d) { return 2 + parseInt(d.EngineCylinders); })
+                .attr("cx", function (d, i) { return xScale(i); })
+                .attr("cy", function (d, i) { return yScale(i); })
+                .attr("r", function (d) { return 2 + parseInt(d.POPESTIMATE) / 10000; })
                 .on("mouseover", function (d, i) {
                     tooltip.classed("hidden", false)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY) + "px")
-                        .select("#value").text("Item #" + i + " is " + d);
-                    testSpan.html("Rar");
+                        .select("#tooltipHeader").text(d.Make);
+                    tooltip.select("#tooltipText").html("Cylinders: " + d.EngineCylinders + "<br />Highway: " + d.AverageHighwayMPG);
                 })
                 .on("mouseout", function () { tooltip.classed("hidden", true); });
 
