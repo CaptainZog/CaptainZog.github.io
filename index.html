@@ -2,7 +2,7 @@
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
- <h1>Narrative Visualization v1</h1>
+ <h1>Narrative Visualization v2</h1>
  <span name="testSpan">hello</span>
  <svg width=300 height=300></svg>
  <div name="tooltip" opacity=0></div>
@@ -12,6 +12,7 @@ async function init() {
 data = await d3.csv("https://flunky.github.io/cars2017.csv");
 
 var tooltip = d3.select("#tooltip");
+var testSpan = d3.select("#testSpan");
 var xScale = d3.scaleLog().domain([10, 150]).range([0,200]);
 var yScale = d3.scaleLog().domain([10, 150]).range([200,0]);
 
