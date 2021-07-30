@@ -1,46 +1,83 @@
 <html>
-<script src='https://d3js.org/d3.v5.min.js'></script>
-<style> circle {fill: lightblue; stroke: black;} </style>
+<head>
+    <script src='https://d3js.org/d3.v5.min.js'></script>
+    <style type="text/css">
+        circle {
+            fill: lightblue;
+            stroke: black;
+        }
+
+        #tooltip {
+            position: absolute;
+            width: 200px;
+            height: auto;
+            padding: 10px;
+            background-color: white;
+            -webkit-border-radius: 10px;
+            -moz-border-radius: 10px;
+            border-radius: 10px;
+            -webkit-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            -moz-box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+            box-shadow: 4px 4px 10px rgba(0, 100, 100, 0.4);
+            pointer-events: none;
+        }
+
+            #tooltip.hidden {
+                display: none;
+            }
+
+            #tooltip p {
+                margin: 0;
+                font-family: sans-serif;
+                font-size: 16px;
+                line-height: 20px;
+            }
+    </style>
+</head>
 <body onload='init()'>
- <h1>Narrative Visualization v2</h1>
- <span name="testSpan">hello</span>
- <svg width=300 height=300></svg>
- <div name="tooltip" opacity=0></div>
-<script>
-async function init() {
+    <h1>Narrative Visualization v2</h1>
+    <span id="testSpan">hello</span>
+    <svg width=300 height=300></svg>
+    <div id="tooltip" class="hidden">
+        <p><strong>Important Label Heading</strong></p>
+        <p><span id="value">100</span>%</p>
+    </div>
+    <script>
+        async function init() {
 
-data = await d3.csv("https://flunky.github.io/cars2017.csv");
+            data = await d3.csv("https://flunky.github.io/cars2017.csv");
 
-var tooltip = d3.select("#tooltip");
-var testSpan = d3.select("#testSpan");
-var xScale = d3.scaleLog().domain([10, 150]).range([0,200]);
-var yScale = d3.scaleLog().domain([10, 150]).range([200,0]);
+            var tooltip = d3.select("#tooltip");
+            var testSpan = d3.select("#testSpan");
+            var xScale = d3.scaleLog().domain([10, 150]).range([0, 200]);
+            var yScale = d3.scaleLog().domain([10, 150]).range([200, 0]);
 
-d3.select("svg")
- .append("g").attr("transform", "translate(50,50)")
- .selectAll("circle")
- .data(data)
- .enter()
- .append("circle")
- .attr("cx", function(d) { return xScale(d.AverageCityMPG); })
- .attr("cy", function(d) { return yScale(d.AverageHighwayMPG); })
- .attr("r", function(d) { return 2 + parseInt(d.EngineCylinders); })
- .on("mouseover", function(d, i) {
-    tooltip.style("opacity", 1)
-           .style("left", (d3.event.pageX)+"px")
-           .style("top", (d3.event.pageY)+"px")
-           .html("Item #" + i + " is " + d);
-    testSpan.html("Rar");
-    });
+            d3.select("svg")
+                .append("g").attr("transform", "translate(50,50)")
+                .selectAll("circle")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("cx", function (d) { return xScale(d.AverageCityMPG); })
+                .attr("cy", function (d) { return yScale(d.AverageHighwayMPG); })
+                .attr("r", function (d) { return 2 + parseInt(d.EngineCylinders); })
+                .on("mouseover", function (d, i) {
+                    tooltip.classed("hidden", false)
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY) + "px")
+                        .select("#value").text("Item #" + i + " is " + d);
+                    testSpan.html("Rar");
+                })
+                .on("mouseout", function () { tooltip.classed("hidden", true); });
 
-d3.select("svg")
- .append("g").attr("transform", "translate(50,50)")
- .call(d3.axisLeft(yScale).tickValues([10, 20, 50, 100]).tickFormat(d3.format("~s")));
+            d3.select("svg")
+                .append("g").attr("transform", "translate(50,50)")
+                .call(d3.axisLeft(yScale).tickValues([10, 20, 50, 100]).tickFormat(d3.format("~s")));
 
-d3.select("svg")
- .append("g").attr("transform", "translate(50,250)")
- .call(d3.axisBottom(xScale).tickValues([10, 20, 50, 100]).tickFormat(d3.format("~s")));
-}
-</script>
+            d3.select("svg")
+                .append("g").attr("transform", "translate(50,250)")
+                .call(d3.axisBottom(xScale).tickValues([10, 20, 50, 100]).tickFormat(d3.format("~s")));
+        }
+    </script>
 </body>
 </html>
