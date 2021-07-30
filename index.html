@@ -1,5 +1,34 @@
 <html>
+<script src='https://d3js.org/d3.v5.min.js'></script>
+<style> rect {fill: lightblue; stroke: black; }</style>
 <body>
-hello world! Yay
+<svg width=300 height=300>
+</svg>
+<script>
+var data = [4,8,15,16,23,42];
+
+var xScale = d3.scaleBand().domain([0, 1, 2, 3, 4, 5]).range([0,200])
+var yScale = d3.scaleLinear().domain([0,42]).range([200,0])
+
+d3.select("svg")
+ .append("g").attr("transform", "translate(50,50)")
+ .selectAll("rect")
+ .data(data)
+ .enter()
+ .append("rect")
+ .attr("x", function(d, i) { return xScale(i); })
+ .attr("y", function(d) { return yScale(d); })
+ .attr("width", 33.3333)
+ .attr("height", function(d) { return 200-yScale(d); })
+
+d3.select("svg")
+ .append("g").attr("transform", "translate(50,50)")
+ .call(d3.axisLeft(yScale))
+
+d3.select("svg")
+ .append("g").attr("transform", "translate(50,250)")
+ .call(d3.axisBottom(xScale))
+
+</script>
 </body>
 </html>
