@@ -3,6 +3,7 @@
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
  <h1>Narrative Visualization</h1>
+ <span name="testSpan">hello</span>
  <svg width=300 height=300></svg>
  <div name="tooltip" opacity=0></div>
 <script>
@@ -27,6 +28,7 @@ d3.select("svg")
            .style("left", (d3.event.pageX)+"px")
            .style("top", (d3.event.pageY)+"px")
            .html("Item #" + i + " is " + d);
+    testSpan.html("Rar");
     })
 
 d3.select("svg")
