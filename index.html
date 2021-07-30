@@ -2,8 +2,8 @@
 <script src='https://d3js.org/d3.v5.min.js'></script>
 <style> circle {fill: lightblue; stroke: black;} </style>
 <body onload='init()'>
-<svg width=300 height=300>
-</svg>
+ <svg width=300 height=300></svg>
+ <div name="tooltip" opacity=0></div>
 <script>
 async function init() {
 
@@ -21,6 +21,12 @@ d3.select("svg")
  .attr("cx", function(d) { return xScale(d.AverageCityMPG); })
  .attr("cy", function(d) { return yScale(d.AverageHighwayMPG); })
  .attr("r", function(d) { return 2 + parseInt(d.EngineCylinders); })
+ .on("mouseover", function(d, i) {
+    tooltip.style("opacity", 1)
+           .style("left", (d3.event.pageX)+"px")
+           .style("top", (d3.event.pageY)+"px")
+           .html("Item #" + i + " is " + d);
+    })
 
 d3.select("svg")
  .append("g").attr("transform", "translate(50,50)")
