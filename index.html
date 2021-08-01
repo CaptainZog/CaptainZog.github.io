@@ -2,7 +2,46 @@
 <head>
     <script src='https://d3js.org/d3.v5.min.js'></script>
     <style type="text/css">
-        circle {
+
+        .sidebar {
+            height: 100%;
+            width: 200px;
+            background-color: #fff;
+            position: fixed !important;
+            z-index: 1;
+            overflow: auto
+        }
+
+        .navbar {
+            border: 1px solid #ccc !important;
+            border-radius: 4px
+        }
+
+        .navbutton {
+            border: none;
+            display: inline-block;
+            padding: 8px 16px;
+            vertical-align: middle;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            background-color: inherit;
+            text-align: center;
+            cursor: pointer;
+            white-space: normal
+        }
+
+            .navbutton:hover {
+                color: #000 !important;
+                background-color: #ccc !important
+            }
+
+        .navactive {
+            color: #fff !important;
+            background-color: #4CAF50 !important
+        }
+
+        rect {
             fill: lightblue;
             stroke: black;
         }
@@ -35,49 +74,120 @@
     </style>
 </head>
 <body onload='init()'>
-    <h1>Narrative Visualization v2</h1>
+    <div class="sidebar w3-round" style="width:25%">
+        <h2>Major US City Populations</h2>
+        <div class="navbar">
+            <a href="#" class="navbutton" onclick="return NavPrevScene();">&laquo;</a>
+            <a id="Scene1" class="navbutton" onclick="return NavScene(1);">1</a>
+            <a id="Scene2" class="navbutton" onclick="return NavScene(2);">2</a>
+            <a id="Scene3" class="navbutton" onclick="return NavScene(3);">3</a>
+            <a id="Scene4" class="navbutton" onclick="return NavScene(4);">4</a>
+            <a href="#" class="navbutton" onclick="return NavNextScene();">&raquo;</a>
+        </div>
+        <br />
+        <div style="padding:20px">
+            <span id="DescriptionText">The US cities with the highest populations are shown.</span>
+        </div>
+    </div>
+    <div style="margin-left:28%;">
+        <div style="height:5%;font-size:24px;">Year: <span id="Year" style="font-weight:bold;color:darkblue;">2010</span></div>
+        <div>
+            <svg></svg>
+        </div>
+    </div>
     <div id="tooltip" class="hidden">
         <p><strong id="tooltipHeader">Tooltip Header</strong></p>
         <p><span id="tooltipText">Tooltip Text</span></p>
     </div>
-    <svg width=300 height=300></svg>
+
 
     <script>
+        // Globals
+        var sceneNumber = 1;
+        var paramYear = 2010;
+        var data = null;
+
         async function init() {
+            data = await d3.csv("https://CaptainZog.github.io/USCities/USCityPopulations.csv");
+            RefreshChart()
+            NavScene(1);
+        }
 
-           // data = await d3.csv("StateCounties/cc-est2019-agesex-01.csv");
-            data = await d3.csv("http://CaptainZog.github.io/StateCounties/cc-est2019-agesex-01.csv");
-           // C:\GitHub\CaptainZog.github.io\StateCounties
-
+        function RefreshChart() {
+            var width = 800
+            var height = 400;
+            var border = 30;
             var tooltip = d3.select("#tooltip");
-            var xScale = d3.scaleLog().domain([10, 150]).range([0, 200]);
-            var yScale = d3.scaleLog().domain([10, 150]).range([200, 0]);
 
+            filteredData = data.filter(a => a.Year == paramYear && a.Population >= 1000000).sort(function (a, b) {
+                return b.Population - a.Population;
+            });
+
+            var xScale = d3.scaleBand().domain(filteredData.map(d => d.City)).range([0, width]).padding(0.2);
+            var yScale = d3.scaleLinear().domain([0, 9000000]).range([height, 0]);
+
+            d3.select("svg").clear;
             d3.select("svg")
-                .append("g").attr("transform", "translate(50,50)")
-                .selectAll("circle")
-                .data(data)
+                .attr("width", width + border * 2)
+                .attr("height", height + border * 2)
+                .append("g").attr("transform", "translate(" + border + "," + border + ")")
+                .selectAll("rect")
+                .data(filteredData)
                 .enter()
-                .append("circle")
-                .attr("cx", function (d, i) { return xScale(i); })
-                .attr("cy", function (d, i) { return yScale(i); })
-                .attr("r", function (d) { return 2 + parseInt(d.POPESTIMATE) / 10000; })
+                .append("rect")
+                .attr("x", (d, i) => xScale(d.City))
+                .attr("y", function (d, i) { return yScale(d.Population); })
+                .attr("width", d => xScale.bandwidth())
+                .attr("height", function (d) { return height - yScale(d.Population); })
                 .on("mouseover", function (d, i) {
                     tooltip.classed("hidden", false)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY) + "px")
                         .select("#tooltipHeader").text(d.Make);
-                    tooltip.select("#tooltipText").html("Cylinders: " + d.EngineCylinders + "<br />Highway: " + d.AverageHighwayMPG);
+                    tooltip.select("#tooltipText").html("City: " + d.City + "<br />State: " + d.State + "<br />Population: " + parseInt(d.Population).toLocaleString('en-US'));
                 })
                 .on("mouseout", function () { tooltip.classed("hidden", true); });
 
             d3.select("svg")
-                .append("g").attr("transform", "translate(50,50)")
-                .call(d3.axisLeft(yScale).tickValues([10, 20, 50, 100]).tickFormat(d3.format("~s")));
+                .append("g").attr("transform", "translate(" + border + "," + border + ")")
+                .call(d3.axisLeft(yScale).tickFormat(d3.format("~s")));
 
             d3.select("svg")
-                .append("g").attr("transform", "translate(50,250)")
-                .call(d3.axisBottom(xScale).tickValues([10, 20, 50, 100]).tickFormat(d3.format("~s")));
+                .append("g").attr("transform", "translate(" + border + "," + (height + border) + ")")
+                .call(d3.axisBottom(xScale));
+        }
+
+        function NavPrevScene() {
+            if (sceneNumber > 1)
+                NavScene(sceneNumber - 1);
+        }
+
+        function NavScene(newSceneNumber) {
+            if (newSceneNumber == 1)
+                SetParamYear(2010);
+            else if (newSceneNumber == 2)
+                SetParamYear(2012);
+            else if (newSceneNumber == 3)
+                SetParamYear(2016);
+            else if (newSceneNumber == 4)
+                SetParamYear(2020);
+
+            d3.select("#Scene" + sceneNumber).classed("navactive", false);
+            sceneNumber = newSceneNumber;
+            d3.select("#Scene" + sceneNumber).classed("navactive", true);
+            RefreshChart();
+        }
+
+        function NavNextScene() {
+            if (sceneNumber < 4)
+                NavScene(sceneNumber + 1);
+        }
+
+        function SetParamYear(year)
+        {
+            var yearElement = d3.select("#Year");
+            yearElement.text(year);
+            paramYear = year;
         }
     </script>
 </body>
