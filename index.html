@@ -1,6 +1,7 @@
 <html>
 <head>
     <script src='https://d3js.org/d3.v5.min.js'></script>
+    <script src="https://rawgit.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
     <style type="text/css">
 
         .sidebar {
@@ -46,7 +47,11 @@
             stroke: black;
         }
 
-        #tooltip {
+        .hidden {
+            display: none;
+        }
+
+        .tooltip {
             position: absolute;
             width: 200px;
             height: auto;
@@ -61,11 +66,7 @@
             pointer-events: none;
         }
 
-            #tooltip.hidden {
-                display: none;
-            }
-
-            #tooltip p {
+            .tooltip p {
                 margin: 0;
                 font-family: sans-serif;
                 font-size: 16px;
@@ -86,24 +87,26 @@
         </div>
         <br />
         <div style="padding:20px">
-            <span id="DescriptionText">The US cities with the highest populations are shown.</span>
+            <span id="SceneDescription">The US cities with the highest populations are shown.</span>
         </div>
     </div>
     <div style="margin-left:28%;">
         <div style="height:5%;font-size:24px;">Year: <span id="Year" style="font-weight:bold;color:darkblue;">2010</span></div>
         <div>
-            <svg></svg>
+            <svg id="canvas"></svg>
         </div>
     </div>
-    <div id="tooltip" class="hidden">
+    <div id="tooltip" class="tooltip hidden">
         <p><strong id="tooltipHeader">Tooltip Header</strong></p>
         <p><span id="tooltipText">Tooltip Text</span></p>
     </div>
 
-
     <script>
         // Globals
         var sceneNumber = 1;
+        var showAnnotation1 = false
+        var showAnnotation2 = false
+        var paramDescription = "";
         var paramYear = 2010;
         var data = null;
 
@@ -113,6 +116,36 @@
             NavScene(1);
         }
 
+        annotation1 = [
+            {
+                note: {
+                    label: "Phoenix jumps into 5th place",
+                    title: "Sunbelt Growth"
+                },
+                x: 400,
+                y: 358,
+                dy: -100,
+                dx: 20
+            }
+        ]
+
+        annotation2 = [
+            {
+                note: {
+                    label: "Phoenix holds onto 5th place more comfortabley",
+                    title: "Sunbelt Growth"
+                },
+                x: 400,
+                y: 358,
+                dy: -100,
+                dx: 20
+            }
+        ]
+
+        // Add annotation to the chart
+        const makeAnnotation1 = d3.annotation().annotations(annotation1)
+        const makeAnnotation2 = d3.annotation().annotations(annotation2)
+        
         function RefreshChart() {
             var width = 800
             var height = 400;
@@ -126,34 +159,60 @@
             var xScale = d3.scaleBand().domain(filteredData.map(d => d.City)).range([0, width]).padding(0.2);
             var yScale = d3.scaleLinear().domain([0, 9000000]).range([height, 0]);
 
-            d3.select("svg").clear;
-            d3.select("svg")
+            d3.select("#canvas").select("#datarects").remove();
+            d3.select("#canvas").select("#xAxis").remove();
+            d3.select("#canvas").select("#yAxis").remove();
+
+            if (showAnnotation1) {
+                d3.select("#canvas")
+                    .append("g").attr("id", "annotation1")
+                    .call(makeAnnotation1)
+                d3.select("#annotation1").classed("hidden", false);
+            }
+            else {
+                d3.select("#annotation1").classed("hidden", true);
+            }
+
+            if (showAnnotation2) {
+                d3.select("#canvas")
+                    .append("g").attr("id", "annotation2")
+                    .call(makeAnnotation2)
+                d3.select("#annotation2").classed("hidden", false);
+            }
+            else {
+                d3.select("#annotation2").classed("hidden", true);
+            }
+
+            d3.select("#canvas")
                 .attr("width", width + border * 2)
                 .attr("height", height + border * 2)
-                .append("g").attr("transform", "translate(" + border + "," + border + ")")
+                .append("g").attr("id", "datarects").attr("transform", "translate(" + border + "," + border + ")")
                 .selectAll("rect")
                 .data(filteredData)
                 .enter()
                 .append("rect")
                 .attr("x", (d, i) => xScale(d.City))
-                .attr("y", function (d, i) { return yScale(d.Population); })
+                .attr("y", function (d, i) { return yScale(0); })
                 .attr("width", d => xScale.bandwidth())
-                .attr("height", function (d) { return height - yScale(d.Population); })
+                .attr("height", function (d) { return height - yScale(0); })
                 .on("mouseover", function (d, i) {
                     tooltip.classed("hidden", false)
                         .style("left", (d3.event.pageX) + "px")
                         .style("top", (d3.event.pageY) + "px")
-                        .select("#tooltipHeader").text(d.Make);
-                    tooltip.select("#tooltipText").html("City: " + d.City + "<br />State: " + d.State + "<br />Population: " + parseInt(d.Population).toLocaleString('en-US'));
+                        .select("#tooltipHeader").text(d.City);
+                    tooltip.select("#tooltipText").html("State: " + d.State + "<br />Year: " + d.Year + "<br />Population: " + parseInt(d.Population).toLocaleString('en-US'));
                 })
-                .on("mouseout", function () { tooltip.classed("hidden", true); });
+                .on("mouseout", function () { tooltip.classed("hidden", true); })
+                .transition().delay(250).duration(1500)
+                .attr("y", function (d, i) { return yScale(d.Population); })
+                .attr("height", function (d) { return height - yScale(d.Population); })
 
-            d3.select("svg")
-                .append("g").attr("transform", "translate(" + border + "," + border + ")")
+            d3.select("#canvas")
+                .append("g").attr("id", "yAxis").attr("transform", "translate(" + border + "," + border + ")")
                 .call(d3.axisLeft(yScale).tickFormat(d3.format("~s")));
 
-            d3.select("svg")
-                .append("g").attr("transform", "translate(" + border + "," + (height + border) + ")")
+            d3.select("#canvas")
+                .append("g").attr("id", "xAxis").attr("transform", "translate(" + border + "," + (height + border) + ")")
                 .call(d3.axisBottom(xScale));
         }
 
@@ -163,14 +222,30 @@
         }
 
         function NavScene(newSceneNumber) {
-            if (newSceneNumber == 1)
+            if (newSceneNumber == 1) {
+                SetParamDescription("In the year 2010... something happened...")
                 SetParamYear(2010);
-            else if (newSceneNumber == 2)
+                showAnnotation1 = false;
+                showAnnotation2 = false;
+            }
+            else if (newSceneNumber == 2) {
                 SetParamYear(2012);
-            else if (newSceneNumber == 3)
+                SetParamDescription("In the year 2012... then something else thing...")
+                showAnnotation1 = false;
+                showAnnotation2 = false;
+            }
+            else if (newSceneNumber == 3) {
                 SetParamYear(2016);
-            else if (newSceneNumber == 4)
-                SetParamYear(2020);
+                SetParamDescription("In the year 2016... then nothing happened...")
+                showAnnotation1 = true;
+                showAnnotation2 = false;
+            }
+            else if (newSceneNumber == 4) {
+                SetParamYear(2019);
+                SetParamDescription("In the year 2019... something else happened...")
+                showAnnotation1 = false;
+                showAnnotation2 = true;
+            }
 
             d3.select("#Scene" + sceneNumber).classed("navactive", false);
             sceneNumber = newSceneNumber;
@@ -183,12 +258,18 @@
                 NavScene(sceneNumber + 1);
         }
 
-        function SetParamYear(year)
-        {
+        function SetParamDescription(description) {
+            var descriptionElement = d3.select("#SceneDescription");
+            descriptionElement.text(description);
+            paramDescription = description;
+        }
+
+        function SetParamYear(year) {
             var yearElement = d3.select("#Year");
             yearElement.text(year);
             paramYear = year;
         }
+
     </script>
 </body>
 </html>
