@@ -41,6 +41,41 @@
             color: #fff !important;
             background-color: #4CAF50 !important
         }
+        
+        .optionbutton {
+            
+            border: 1px solid #ccc !important;
+            border-radius: 4px;
+            display: inline-block;
+            padding: 8px 16px;
+            vertical-align: middle;
+            overflow: hidden;
+            text-decoration: none;
+            background-color: inherit;
+            text-align: center;
+            cursor: pointer;
+            white-space: normal;
+        }
+
+        .optionbuttonNewYork{
+            color: #3366cc;
+        }
+
+        .optionbuttonCalifornia{
+            color: #109618;
+        }
+
+        .optionbuttonTexas{
+            color: #dc3912;
+        }
+
+            .optionbutton:hover {
+                background-color: #eee !important;
+            }
+
+            .optionbuttonInactive {
+                color: rgba(0, 0, 0, 0.4)
+            }
 
         rect {
             fill: lightblue;
@@ -75,15 +110,15 @@
     </style>
 </head>
 <body onload='init()'>
-    <div class="sidebar w3-round" style="width:25%">
+    <div class="sidebar w3-round" style="width:28%">
         <h2>Major US City Populations</h2>
         <div class="navbar">
-            <a href="#" class="navbutton" onclick="return NavPrevScene();">&laquo;</a>
-            <a id="Scene1" class="navbutton" onclick="return NavScene(1);">1</a>
-            <a id="Scene2" class="navbutton" onclick="return NavScene(2);">2</a>
-            <a id="Scene3" class="navbutton" onclick="return NavScene(3);">3</a>
-            <a id="Scene4" class="navbutton" onclick="return NavScene(4);">4</a>
-            <a href="#" class="navbutton" onclick="return NavNextScene();">&raquo;</a>
+            <a href="#" class="navbutton" onclick="return NavPrevScene();" style="width:2%">&laquo;</a>
+            <a id="Scene1" class="navbutton" onclick="return NavScene(1);" style="width:10%">2010</a>
+            <a id="Scene2" class="navbutton" onclick="return NavScene(2);" style="width:10%">2013</a>
+            <a id="Scene3" class="navbutton" onclick="return NavScene(3);" style="width:10%">2016</a>
+            <a id="Scene4" class="navbutton" onclick="return NavScene(4);" style="width:10%">2019</a>
+            <a href="#" class="navbutton" onclick="return NavNextScene();" style="width:2%">&raquo;</a>
         </div>
         <br />
         <div style="padding:20px">
@@ -91,8 +126,13 @@
         </div>
     </div>
     <div style="margin-left:28%;">
-        <div style="height:5%;font-size:24px;">Year: <span id="Year" style="font-weight:bold;color:darkblue;">2010</span></div>
-        <div>
+        <div style="height:5%;font-size:24px;padding-left:10px;">
+            Year: <span id="Year" style="font-weight:bold;color:darkblue;">2010</span>
+            <a id="NewYorkToggle" class="optionbutton optionbuttonNewYork" onclick="return ToggleNewYork();" style=" margin-left: 20px;">New York</a>
+            <a id="CaliforniaToggle" class="optionbutton optionbuttonCalifornia" onclick="return ToggleCalifornia();" style=" margin-left: 20px;">California</a>
+            <a id="TexasToggle" class="optionbutton optionbuttonTexas" onclick="return ToggleTexas();" style=" margin-left: 20px;">Texas</a>
+        </div>
+        <div style="margin-top:80px;">
             <svg id="canvas"></svg>
         </div>
     </div>
@@ -105,15 +145,23 @@
         // Globals
         var chartWidth = 800
         var chartHeight = 400;
-        var maxPopulation = 8500000;
+        var chartMargin = 30;
+        var maxPopulation = 4000000;
+        var colorScale = d3.scaleOrdinal()
+            .domain(["Texas", "California", "Illinois", "New York", "South Carolina", "Arizona", "Pennsylvania"])
+            .range(["#dc3912", "#109618", "#ff9900", "#3366cc", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"])
         var xScale = null
         var yScale = null;
         var lastSceneNumber = 0;
         var sceneNumber = 1;
+        var optionNewYork = false;
+        var optionCalifornia = true;
+        var optionTexas = true;
         var showAnnotation1 = false
         var showAnnotation2 = false
         var paramDescription = "";
         var paramYear = 2010;
+        var paramMinPopulation = 500000;
         var fullDataset = null;
         var sceneDataset = null;
 
@@ -121,33 +169,33 @@
             fullDataset = await d3.csv("https://CaptainZog.github.io/USCities/USCityPopulations.csv");
             RefreshSceneDataset();
             InitChart()
-            UpdateChartData(true);
+            UpdateChartData();
             NavScene(1);
         }
 
         annotation1 = [
             {
                 note: {
-                    label: "Phoenix jumps into 5th place",
+                    label: "Phoenix overtakes Philadelphia",
                     title: "Sunbelt Growth"
                 },
-                x: 400,
-                y: 358,
-                dy: -100,
-                dx: 20
+                x: 310,
+                y: 270,
+                dx: 0,
+                dy: -50
             }
         ]
 
         annotation2 = [
             {
                 note: {
-                    label: "Phoenix holds onto 5th place more comfortabley",
+                    label: "Phoenix holds a comfortable lead over Philadelphia",
                     title: "Sunbelt Growth"
                 },
-                x: 400,
-                y: 358,
-                dy: -100,
-                dx: 20
+                x: 270,
+                y: 265,
+                dx: 0,
+                dy: -50
             }
         ]
 
@@ -156,48 +204,60 @@
         const makeAnnotation2 = d3.annotation().annotations(annotation2)
 
         function RefreshSceneDataset() {
-            sceneDataset = fullDataset.filter(a => a.Year == paramYear && a.Population >= 900000).sort(function (a, b) {
+            sceneDataset = fullDataset.filter(a => (a.State != "New York" || optionNewYork) && (a.State != "California" || optionCalifornia) && (a.State != "Texas" || optionTexas) && a.Year == paramYear && a.Population >= paramMinPopulation).sort(function (a, b) {
                 return b.Population - a.Population;
             });//.slice(0, 10);//top 10 here;
         }
         
         function InitChart() {
-            var border = 30;
-
-            xScale = d3.scaleBand().domain(sceneDataset.map(d => d.City)).range([0, chartWidth]).padding(0.05);
+            maxPopulation = optionNewYork ? 9500000 : 4000000;
             yScale = d3.scaleLinear().domain([0, maxPopulation]).range([chartHeight, 0]);
-
+            xScale = d3.scaleBand().domain(sceneDataset.map(d => d.City).slice(0,9)).range([chartWidth, chartWidth]).padding(0.05);
+            
             d3.select("#canvas")
-                .attr("width", chartWidth + border * 2)
-                .attr("height", chartHeight + border * 2)
-                .append("g").attr("id", "datarects").attr("transform", "translate(" + border + "," + border + ")")
-                
-            d3.select("#canvas")
-                .append("g").attr("id", "yAxis").attr("transform", "translate(" + border + "," + border + ")")
+                .append("g").attr("id", "yAxis").attr("transform", "translate(" + chartMargin + "," + chartMargin + ")")
                 .call(d3.axisLeft(yScale).tickFormat(d3.format("~s")));
 
             d3.select("#canvas")
-                .append("g").attr("id", "xAxis").attr("transform", "translate(" + border + "," + (chartHeight + border) + ")")
+                .append("g").attr("id", "xAxis").attr("transform", "translate(" + chartMargin + "," + (chartHeight + chartMargin) + ")")
                 .call(d3.axisBottom(xScale));
+
+            d3.select("#canvas")
+                .attr("width", chartWidth + chartMargin * 2)
+                .attr("height", chartHeight + chartMargin * 2)
+                .append("g").attr("id", "datarects").attr("transform", "translate(" + chartMargin + "," + chartMargin + ")")
         }
 
-        function UpdateChartData(first) {
+        function colores_google(n) {
+          var colores_g = ["#3366cc", "#dc3912", "#ff9900", "#109618", "#990099", "#0099c6", "#dd4477", "#66aa00", "#b82e2e", "#316395", "#994499", "#22aa99", "#aaaa11", "#6633cc", "#e67300", "#8b0707", "#651067", "#329262", "#5574a6", "#3b3eac"];
+          return colores_g[n % colores_g.length];
+        }
+
+        function UpdateChartData() {
             var tooltip = d3.select("#tooltip");
+
+            maxPopulation = optionNewYork ? 8500000 : 4000000;
+            yScale = d3.scaleLinear().domain([0, maxPopulation]).range([chartHeight, 0]);
+
             xScale = d3.scaleBand().domain(sceneDataset.map(d => d.City)).range([0, chartWidth]).padding(0.05);
             
+            d3.select("#canvas").select("#yAxis")
+                .transition().duration(1000)
+                .call(d3.axisLeft(yScale).tickFormat(d3.format("~s")));
+                
             d3.select("#canvas").select("#xAxis")
                 .transition().duration(1000)
                 .call(d3.axisBottom(xScale));
                 
             var bars = d3.select("#canvas").select("#datarects").selectAll("rect")
-                .data(sceneDataset);
+                .data(sceneDataset, function(d){ return d.City; });
 
             bars.exit()
                 .transition()
                 .duration(1000)
                 .attr("x", chartWidth)
                 .attr("y", function (d, i) { return yScale(0); })
-                .attr("width", xScale.bandwidth())
+                .attr("width", 0)
                 .attr("height", 0)
                 .style('fill-opacity', 1e-6)
                 .style('border-color', "rgba(0,0,0,0)")
@@ -206,8 +266,9 @@
             bars.enter().append("rect")
                 .attr("x", chartWidth)
                 .attr("y", function (d, i) { return yScale(0); })
-                .attr("width", xScale.bandwidth())
+                .attr("width", 0)
                 .attr("height", 0)
+                .style("fill", d => colorScale(d.State))
                 .on("mouseover", function (d, i) {
                     tooltip.classed("hidden", false)
                         .style("left", (d3.event.pageX) + "px")
@@ -218,15 +279,15 @@
                 .on("mouseout", function () { tooltip.classed("hidden", true); })
 
             bars = d3.select("#canvas").select("#datarects").selectAll("rect")
-                .data(sceneDataset)
+                .data(sceneDataset, function(d){ return d.City; })
 
             bars.transition()
                 .duration(1000)
-                .attr("x", (d, i) => xScale(d.City))
-                .attr("y", function (d, i) { return yScale(d.Population); })
+                .attr("x", d => xScale(d.City))
+                .attr("y", d => yScale(d.Population))
                 .attr("width", xScale.bandwidth())
-                .attr("height", function (d) { return chartHeight - yScale(d.Population); })
-
+                .attr("height", d => chartHeight - yScale(d.Population))
+                .style("fill", d => colorScale(d.State))
 
 
             if (showAnnotation1) {
@@ -243,7 +304,7 @@
                 d3.select("#canvas")
                     .append("g").attr("id", "annotation2")
                     .call(makeAnnotation2)
-                d3.select("#annotation2").classed("hidden", false);
+                d3.select("#annotation2").classed("hidden", false)
             }
             else {
                 d3.select("#annotation2").classed("hidden", true);
@@ -257,26 +318,38 @@
 
         function NavScene(newSceneNumber) {
             if (newSceneNumber == 1) {
-                SetParamDescription("In the year 2010... something happened...")
                 SetParamYear(2010);
+                SetParamMinPopulation(900000);
+                SetOptionNewYork(true);
+                SetParamDescription("In 2010, the following Cities had populations of at least 900,000")
                 showAnnotation1 = false;
                 showAnnotation2 = false;
             }
             else if (newSceneNumber == 2) {
                 SetParamYear(2013);
-                SetParamDescription("In the year 2013... then something else thing...")
+                SetParamMinPopulation(900000);
+                SetOptionNewYork(false);
+                SetParamDescription("In 2013, taking New York off the chart to see details better, we can see the ranking of states remains unchanged.")
                 showAnnotation1 = false;
                 showAnnotation2 = false;
             }
             else if (newSceneNumber == 3) {
                 SetParamYear(2016);
-                SetParamDescription("In the year 2016... then nothing happened...")
+                SetParamMinPopulation(900000);
+                SetParamDescription("In 2016, Phoenix overtakes Philadelphia as the 5th most populated city in the US.")
+                optionNewYork = false;
+                optionCalifornia = true;
+                optionTexas = true;
                 showAnnotation1 = true;
                 showAnnotation2 = false;
             }
             else if (newSceneNumber == 4) {
                 SetParamYear(2019);
-                SetParamDescription("In the year 2019... something else happened...")
+                SetParamMinPopulation(900000);
+                SetParamDescription("In 2019, Texas becomes home to 5 of the 12 most populous cities in the US.")
+                optionNewYork = false;
+                optionCalifornia = true;
+                optionTexas = true;
                 showAnnotation1 = false;
                 showAnnotation2 = true;
             }
@@ -286,7 +359,7 @@
             d3.select("#Scene" + sceneNumber).classed("navactive", true);
             
             RefreshSceneDataset();
-            UpdateChartData(false);
+            UpdateChartData();
         }
 
         function NavNextScene() {
@@ -294,16 +367,55 @@
                 NavScene(sceneNumber + 1);
         }
 
-        function SetParamDescription(description) {
-            var descriptionElement = d3.select("#SceneDescription");
-            descriptionElement.text(description);
-            paramDescription = description;
+        function ToggleNewYork() {
+            SetOptionNewYork(!optionNewYork);
+            showAnnotation1 = false;
+            showAnnotation2 = false;
+            
+            RefreshSceneDataset();
+            UpdateChartData();
+        }
+
+        function ToggleCalifornia() {
+            optionCalifornia = !optionCalifornia;
+            showAnnotation1 = false;
+            showAnnotation2 = false;
+            d3.select("#CaliforniaToggle").classed("optionbuttonInactive", !optionCalifornia)
+            
+            RefreshSceneDataset();
+            UpdateChartData();
+        }
+
+        function ToggleTexas() {
+            optionTexas = !optionTexas;
+            showAnnotation1 = false;
+            showAnnotation2 = false;
+            d3.select("#TexasToggle")
+                .classed("optionbuttonInactive", !optionTexas)
+            
+            RefreshSceneDataset();
+            UpdateChartData();
         }
 
         function SetParamYear(year) {
             var yearElement = d3.select("#Year");
             yearElement.text(year);
             paramYear = year;
+        }
+
+        function SetOptionNewYork(toggle) {
+            optionNewYork = toggle
+            d3.select("#NewYorkToggle").classed("optionbuttonInactive", !optionNewYork)
+        }
+
+        function SetParamMinPopulation(minPopulation) {
+            paramMinPopulation = minPopulation;
+        }
+
+        function SetParamDescription(description) {
+            var descriptionElement = d3.select("#SceneDescription");
+            descriptionElement.text(description);
+            paramDescription = description;
         }
 
     </script>
