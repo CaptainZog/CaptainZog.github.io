@@ -210,7 +210,7 @@
         }
         
         function InitChart() {
-            maxPopulation = optionNewYork ? 9500000 : 4000000;
+            maxPopulation = optionNewYork ? 8500000 : (optionCalifornia ? 4000000 : 2750000);
             yScale = d3.scaleLinear().domain([0, maxPopulation]).range([chartHeight, 0]);
             xScale = d3.scaleBand().domain(sceneDataset.map(d => d.City).slice(0,9)).range([chartWidth, chartWidth]).padding(0.05);
             
@@ -337,9 +337,6 @@
                 SetParamYear(2016);
                 SetParamMinPopulation(900000);
                 SetParamDescription("In 2016, Phoenix overtakes Philadelphia as the 5th most populated city in the US.")
-                optionNewYork = false;
-                optionCalifornia = true;
-                optionTexas = true;
                 showAnnotation1 = true;
                 showAnnotation2 = false;
             }
@@ -347,9 +344,7 @@
                 SetParamYear(2019);
                 SetParamMinPopulation(900000);
                 SetParamDescription("In 2019, Texas becomes home to 5 of the 12 most populous cities in the US.")
-                optionNewYork = false;
-                optionCalifornia = true;
-                optionTexas = true;
+                SetOptionTexas(true);
                 showAnnotation1 = false;
                 showAnnotation2 = true;
             }
@@ -403,9 +398,19 @@
             paramYear = year;
         }
 
-        function SetOptionNewYork(toggle) {
-            optionNewYork = toggle
+        function SetOptionNewYork(value) {
+            optionNewYork = value
             d3.select("#NewYorkToggle").classed("optionbuttonInactive", !optionNewYork)
+        }
+
+        function SetOptionCalifornia(value) {
+            optionCalifornia = value
+            d3.select("#CaliforniaToggle").classed("optionbuttonInactive", !optionCalifornia)
+        }
+
+        function SetOptionTexas(value) {
+            optionTexas = value
+            d3.select("#TexasToggle").classed("optionbuttonInactive", !optionTexas)
         }
 
         function SetParamMinPopulation(minPopulation) {
