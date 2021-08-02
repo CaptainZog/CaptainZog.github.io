@@ -145,7 +145,7 @@
         // Globals
         var chartWidth = 800
         var chartHeight = 400;
-        var chartMargin = 30;
+        var chartMargin = 40;
         var maxPopulation = 4000000;
         var colorScale = d3.scaleOrdinal()
             .domain(["Texas", "California", "Illinois", "New York", "South Carolina", "Arizona", "Pennsylvania"])
@@ -236,7 +236,7 @@
         function UpdateChartData() {
             var tooltip = d3.select("#tooltip");
 
-            maxPopulation = optionNewYork ? 8500000 : 4000000;
+            maxPopulation = optionNewYork ? 8500000 : (optionCalifornia ? 4000000 : 2750000);
             yScale = d3.scaleLinear().domain([0, maxPopulation]).range([chartHeight, 0]);
 
             xScale = d3.scaleBand().domain(sceneDataset.map(d => d.City)).range([0, chartWidth]).padding(0.05);
